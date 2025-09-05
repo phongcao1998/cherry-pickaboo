@@ -1,12 +1,26 @@
 {
-  "name": "pickaboo",
-   "version": "1.0.0",
+  "name": "cherry-pickaboo",
+  "version": "1.0.3",
   "type": "module",
+  "description": "Interactive cherry-pick tool for Git with a beautiful CLI interface",
+  "main": "bin/pickaboo.js",
   "bin": {
     "cherry-pickaboo": "bin/pickaboo.js"
   },
+  "keywords": ["git", "cherry-pick", "cli", "interactive", "branch"],
+  "author": "phongcao1998 phong.cao@pizza4ps.com",
   "license": "MIT",
-  "description": "",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/phongcao1998/cherry-pickaboo.git"
+  },
+  "bugs": {
+    "url": "https://github.com/phongcao1998/cherry-pickaboo/issues"
+  },
+  "homepage": "https://github.com/phongcao1998/cherry-pickaboo#readme",
+  "engines": {
+    "node": ">=14.0.0"
+  },
   "dependencies": {
     "chalk": "^5.6.0",
     "inquirer": "^12.9.4",

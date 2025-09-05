@@ -7,12 +7,26 @@ import simpleGit from 'simple-git';
 const git = simpleGit();
 
 async function main() {
-  const [, , sourceBranch, destBranch] = process.argv;
+  const args = process.argv.slice(2);
+  const sourceBranch = args[0];
+  const destBranch = args[1];
+  
+  // Extract keyword and flags
+  let keyword = '';
+  let noCommitFlag = false;
+  
+  for (let i = 2; i < args.length; i++) {
+    if (args[i] === '--no-commit') {
+      noCommitFlag = true;
+    } else if (!keyword && !args[i].startsWith('--')) {
+      keyword = args[i];
+    }
+  }
 
   if (!sourceBranch || !destBranch) {
     console.error(
       chalk.red(
-        '❌ Usage: node cherry-pickaboo.js <sourceBranch> <destinationBranch>',
+        '❌ Usage: cherry-pickaboo <sourceBranch> <destinationBranch> [keyword] [--no-commit]',
       ),
     );
     process.exit(1);
@@ -28,15 +42,26 @@ async function main() {
       throw new Error(`Destination branch "${destBranch}" not found`);
     }
 
-    const log = await git.log({ from: destBranch, to: sourceBranch });
+    const log = await git.log([sourceBranch]);
+    let commits = log.all.map((c) => ({
+      hash: c.hash,
+      message: c.message,
+      author: c.author_name,
+      date: c.date,
+      label: `${chalk.yellow(c.hash.slice(0, 7))} - ${c.message} ${chalk.gray(`(${c.author_name})`)}`,
+    }));
 
-    const commits = log.all.map((c) => {
-      const date = new Date(c.date).toLocaleString();
-      return {
-        hash: c.hash,
-        label: `${chalk.yellow(c.hash.slice(0, 7))} - ${c.message} ${chalk.gray(`(${date})`)} ${chalk.gray(`(${c.author_name})`)}`,
-      };
-    });
+    // Filter commits by keyword if provided
+    if (keyword) {
+      commits = commits.filter((commit) =>
+        commit.message.toLowerCase().includes(keyword.toLowerCase()) ||
+        commit.author.toLowerCase().includes(keyword.toLowerCase()) ||
+        commit.hash.toLowerCase().includes(keyword.toLowerCase())
+      );
+      
+      console.log(chalk.blue(`🔍 Filtering commits by keyword: ${chalk.yellow(keyword)}`));
+      console.log(chalk.gray(`Found ${commits.length} matching commits\n`));
+    }
 
     if (commits.length === 0) {
       console.log(
@@ -55,6 +80,7 @@ async function main() {
           `📋 Select commits to cherry-pick into ${chalk.magenta(destBranch)}:`,
         ),
         choices: commits.map((c) => ({ name: c.label, value: c.hash })),
+        loop: false,
         pageSize: 15,
         validate: (val) =>
           val.length > 0 ? true : chalk.red('⚠️ Pick at least one commit'),
@@ -76,7 +102,7 @@ async function main() {
         console.log(
           chalk.green(`🍒 Cherry-picking ${chalk.yellow(commit)}...`),
         );
-        await git.raw(['cherry-pick', commit]);
+        await git.raw(['cherry-pick', commit, noCommitFlag ? '--no-commit' : ''].filter(Boolean));
       } catch {
         console.error(
           chalk.red(
